@@ -1,15 +1,36 @@
 import express from "express";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 app.use(express.json());
+
+// In Vercel serverless, the deployment filesystem is read-only at runtime except /tmp.
+// We resolve the initial data from Data/faculty.json and use /tmp for writes when in serverless.
+const getFilePath = () => {
+    if (process.env.VERCEL) {
+        const tmpPath = path.join("/tmp", "faculty.json");
+        if (!fs.existsSync(tmpPath)) {
+            const initialData = fs.readFileSync(path.join(__dirname, "Data", "faculty.json"), "utf-8");
+            fs.writeFileSync(tmpPath, initialData, "utf-8");
+        }
+        return tmpPath;
+    }
+    return path.join(__dirname, "Data", "faculty.json");
+};
+
 // Read data from faculty.json
 const readData = () => {
-    const data = fs.readFileSync("./data/faculty.json","utf-8");
+    const data = fs.readFileSync(getFilePath(), "utf-8");
     return JSON.parse(data);
 };
 // Write data into faculty.json
 const writeData = (data) => {
-    fs.writeFileSync("./data/faculty.json",JSON.stringify(data, null, 2),"utf-8");
+    fs.writeFileSync(getFilePath(), JSON.stringify(data, null, 2), "utf-8");
 };
 
 // CRUD OPERATIONS API
@@ -101,8 +122,11 @@ app.delete("/api/v1/faculty/:id", (req, res) => {
 });
 
 // START SERVER
-const PORT = 8000;
-app.listen(PORT, () => {
-      console.log(
-        `Server is running on http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 8000;
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;

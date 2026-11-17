@@ -2,6 +2,11 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -15,6 +20,7 @@ app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true }));
 
 // Custom middleware
+const logPath = process.env.VERCEL ? path.join("/tmp", "server.log") : path.join(__dirname, "server.log");
 const logger = (req, res, next) => {
   const start = Date.now();
 
@@ -22,7 +28,7 @@ const logger = (req, res, next) => {
     const duration = Date.now() - start;
     const log = `${req.method} ${req.url} ${res.statusCode} - ${duration}ms\n`;
 
-    fs.appendFile("server.log", log, (err) => {
+    fs.appendFile(logPath, log, (err) => {
       if (err) {
         console.error("Error writing log:", err);
       }
@@ -105,7 +111,11 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-const PORT = 6500;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 6500;
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;

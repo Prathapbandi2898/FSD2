@@ -1,24 +1,24 @@
 import express from "express";
 import { MongoClient, ObjectId } from "mongodb";
-const app = express()
-const port = 7000;
+const app = express();
+const port = process.env.PORT || 7000;
 
 // MongoDB connection
-const mongoUrl = "mongodb://localhost:27017";
-const databaseName = "library_db";
-const client = new MongoClient(mongoUrl);
+const mongoUrl = process.env.MONGO_URI || process.env.MONGO_FULL_URI || "mongodb://localhost:27017";
+const databaseName = process.env.DB_NAME || "library_db";
+const client = new MongoClient(mongoUrl, { serverSelectionTimeoutMS: 2000 });
 
 let db;
-await client
-  .connect()
-  .then(() => {
-    db = client.db(databaseName);
-    console.log("Connected to MongoDB");
-  })
-  .catch((err) => {
-    console.error("Failed to connect to MongoDB", err);
+try {
+  await client.connect();
+  db = client.db(databaseName);
+  console.log("Connected to MongoDB");
+} catch (err) {
+  console.error("Failed to connect to MongoDB", err);
+  if (!process.env.VERCEL) {
     process.exit(1);
-  });
+  }
+}
 
 // Middleware
 app.use(express.json());
@@ -142,9 +142,13 @@ app.use((err, req, res, next) => {
     .json({ message: err.message || "Internal Server Error" });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+}
+
+export default app;
 
 
 

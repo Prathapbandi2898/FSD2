@@ -11,7 +11,11 @@ const app = express();
 app.use(express.json());
 
 //establishing connection with mongodb
-connectDB(MONGO_URI);
+if (MONGO_URI) {
+  connectDB(MONGO_URI);
+} else {
+  console.warn("Warning: MONGO_URI not defined for mvc_express_app.");
+}
 
 app.use("/api/v1/movies", movieRoutes);
 
@@ -27,6 +31,10 @@ app.use((err, req, res, next) => {
   res.status(status).json({ message });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
