@@ -10,12 +10,15 @@ const MONGO_URI = process.env.MONGO_URI;
 const app = express();
 app.use(express.json());
 
-//establishing connection with mongodb
-if (MONGO_URI) {
-  connectDB(MONGO_URI);
-} else {
-  console.warn("Warning: MONGO_URI not defined for mvc_express_app.");
-}
+// Database connection middleware - guarantees DB is connected before any route handler runs
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.use("/api/v1/movies", movieRoutes);
 

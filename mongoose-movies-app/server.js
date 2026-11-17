@@ -9,22 +9,47 @@ const port = process.env.PORT || 8080;
 //Middleware
 app.use(express.json());
 
-// MongoDB connection
-const mongoUrl = process.env.MONGO_FULL_URI || process.env.MONGO_URI;
-
-if (mongoUrl) {
-  try {
-    await mongoose.connect(mongoUrl);
-    console.log("Connected to MongoDB");
-  } catch (err) {
-    console.error("Failed to connect to MongoDB", err);
-    if (!process.env.VERCEL) {
-      process.exit(1);
-    }
-  }
-} else {
-  console.warn("Warning: MONGO_FULL_URI / MONGO_URI not provided.");
+// Cached Mongoose connection for serverless execution
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
 }
+
+const connectDB = async () => {
+  const mongoUrl = process.env.MONGO_FULL_URI || process.env.MONGO_URI;
+  if (!mongoUrl) {
+    throw new Error("Missing MongoDB connection string: Please define MONGO_FULL_URI or MONGO_URI.");
+  }
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return cached.conn;
+  }
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(mongoUrl, {
+      bufferCommands: false,
+    }).then((m) => {
+      console.log("Connected to MongoDB");
+      return m;
+    });
+  }
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    cached.promise = null;
+    console.error("Failed to connect to MongoDB", err);
+    throw err;
+  }
+  return cached.conn;
+};
+
+// Database connection middleware - guarantees DB is connected before any route handler runs
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 const movieSchema = new mongoose.Schema({
   title: { type: String, required: true },
