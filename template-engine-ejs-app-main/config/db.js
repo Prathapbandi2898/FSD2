@@ -10,11 +10,11 @@ if (!cached) {
 }
 
 const connectDB = async () => {
-  const mongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
+  const mongoURI = process.env.MONGO_URI;
 
   if (!mongoURI) {
     throw new Error(
-      "Missing MongoDB connection string: Please define the MONGO_URI (or MONGODB_URI) environment variable in your Vercel project settings."
+      "Missing MongoDB connection string: Please define the MONGO_URI environment variable in your .env or Vercel project settings."
     );
   }
 
@@ -25,8 +25,7 @@ const connectDB = async () => {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false, // Immediately fail queries instead of buffering for 10000ms if not connected
-      dbName: process.env.DB_NAME || undefined,
+      bufferCommands: false, // Immediately fail queries instead of buffering for 10000ms if disconnected
     };
 
     cached.promise = mongoose.connect(mongoURI, opts).then((mongooseInstance) => {

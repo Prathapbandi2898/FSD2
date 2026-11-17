@@ -7,11 +7,11 @@ if (!cached) {
 }
 
 const connectDB = async () => {
-  const mongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
+  const mongoURI = process.env.MONGO_URI;
 
   if (!mongoURI) {
     throw new Error(
-      "Missing MongoDB connection string: Please define the MONGO_URI (or MONGODB_URI) environment variable."
+      "Missing MongoDB connection string: Please define the MONGO_URI environment variable in your .env or Vercel project settings."
     );
   }
 
@@ -22,11 +22,10 @@ const connectDB = async () => {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      dbName: process.env.DB_NAME || undefined,
     };
 
     cached.promise = mongoose.connect(mongoURI, opts).then((mongooseInstance) => {
-      console.log("Connected to MongoDB");
+      console.log("Connected to MongoDB successfully");
       return mongooseInstance;
     });
   }
@@ -35,7 +34,7 @@ const connectDB = async () => {
     cached.conn = await cached.promise;
   } catch (error) {
     cached.promise = null;
-    console.error("Problem while connecting mongoDB", error);
+    console.error("Problem while connecting MongoDB:", error.message);
     throw error;
   }
 
