@@ -7,7 +7,7 @@ let cached = global.mongoose;
 
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
-}
+}    
 
 const connectDB = async () => {
   const mongoURI = process.env.MONGO_URI;
