@@ -5,7 +5,6 @@ import movieRoutes from "./routes/movieRoutes.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 8000;
-const MONGO_URI = process.env.MONGO_URI;
 
 const app = express();
 app.use(express.json());
